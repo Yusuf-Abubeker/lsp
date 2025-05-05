@@ -86,7 +86,7 @@ include '../includes/header.php';
                     <textarea name="comment" id="comment" rows="4" class="form-textarea w-full" placeholder="Write your feedback here..." required></textarea>
                 </div>
                 <div class="flex justify-end">
-                    <a href="/customer/bookings.php" class="btn btn-outline mr-3">Cancel</a>
+                    <a href="<?php echo BASE_URL; ?>/customer/bookings.php" class="btn btn-outline mr-3">Cancel</a>
                     <button type="submit" class="btn btn-primary">Submit Review</button>
                 </div>
             </form>

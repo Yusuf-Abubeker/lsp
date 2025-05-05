@@ -113,8 +113,8 @@ include 'includes/header.php';
             <h2 class="text-2xl font-bold mb-4">Want to Learn More?</h2>
             <p class="text-gray-600 mb-6">Get in touch with our team to learn more about our platform and services.</p>
             <div class="flex justify-center space-x-4">
-                <a href="/contact.php" class="btn btn-primary">Contact Us</a>
-                <a href="/auth/register.php?role=provider" class="btn btn-outline">Become a Provider</a>
+                <a href="<?php echo BASE_URL; ?>/contact.php" class="btn btn-primary">Contact Us</a>
+                <a href="<?php echo BASE_URL; ?>/auth/register.php?role=provider" class="btn btn-outline">Become a Provider</a>
             </div>
         </div>
     </div>

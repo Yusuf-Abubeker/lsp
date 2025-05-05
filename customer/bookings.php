@@ -1,29 +1,30 @@
 <?php
+// Include necessary files
 require_once '../config/database.php';
 require_once '../models/Booking.php';
-require_once '../models/User.php';
 require_once '../utils/helpers.php';
 
-// Start session
+// Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Auth check
+// Check if user is logged in and is a customer
 requireLogin();
 requireRole('customer');
 
-// DB & models
-$db = (new Database())->getConnection();
+// Get database connection
+$database = new Database();
+$db = $database->getConnection();
+
+// Initialize Booking object
 $booking = new Booking($db);
-$user = new User($db);
-$user->readOne($_SESSION['user_id']);
 
-// Handle search/filter
-$status_filter = isset($_GET['status']) ? sanitizeInput($_GET['status']) : '';
+// Get status filter
+$status_filter = isset($_GET['status']) ? $_GET['status'] : '';
 
-// Fetch bookings
-$all_bookings = $booking->getByCustomer($_SESSION['user_id'], $status_filter);
+// Get user's bookings
+$bookings = $booking->getByCustomer($_SESSION['user_id'], $status_filter);
 
 // Include header
 include '../includes/header.php';
@@ -31,75 +32,112 @@ include '../includes/header.php';
 
 <div class="bg-gray-50 py-8">
     <div class="container-custom">
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-2xl font-bold">My Bookings</h1>
-                <a href="<?= BASE_URL ?>/services/search.php" class="btn btn-primary">
-                    <i class="fas fa-plus mr-2"></i> New Booking
+                <a href="<?php echo BASE_URL; ?>/services/search.php" class="btn btn-primary text-sm">
+                    <i class="fas fa-plus mr-2"></i> Book New Service
                 </a>
             </div>
 
-            <?= displayFlashMessage(); ?>
+            <?= displayFlashMessage() ?>
 
-            <!-- Filters -->
-            <form method="GET" class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Status:</label>
-                <select name="status" onchange="this.form.submit()" class="form-select w-48">
-                    <option value="">All</option>
-                    <option value="pending" <?= $status_filter == 'pending' ? 'selected' : '' ?>>Pending</option>
-                    <option value="confirmed" <?= $status_filter == 'confirmed' ? 'selected' : '' ?>>Confirmed</option>
-                    <option value="completed" <?= $status_filter == 'completed' ? 'selected' : '' ?>>Completed</option>
-                    <option value="cancelled" <?= $status_filter == 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
-                </select>
-            </form>
+            <!-- Status Filters -->
+            <div class="mb-6">
+                <div class="flex gap-2">
+                    <a href="<?php echo BASE_URL; ?>/customer/bookings.php" 
+                       class="px-4 py-2 rounded-lg <?= empty($status_filter) ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' ?>">
+                        All Bookings
+                    </a>
+                    <a href="<?php echo BASE_URL; ?>/customer/bookings.php?status=pending" 
+                       class="px-4 py-2 rounded-lg <?= $status_filter === 'pending' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' ?>">
+                        Pending
+                    </a>
+                    <a href="<?php echo BASE_URL; ?>/customer/bookings.php?status=confirmed" 
+                       class="px-4 py-2 rounded-lg <?= $status_filter === 'confirmed' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' ?>">
+                        Confirmed
+                    </a>
+                    <a href="<?php echo BASE_URL; ?>/customer/bookings.php?status=completed" 
+                       class="px-4 py-2 rounded-lg <?= $status_filter === 'completed' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' ?>">
+                        Completed
+                    </a>
+                    <a href="<?php echo BASE_URL; ?>/customer/bookings.php?status=cancelled" 
+                       class="px-4 py-2 rounded-lg <?= $status_filter === 'cancelled' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' ?>">
+                        Cancelled
+                    </a>
+                </div>
+            </div>
 
-            <?php if ($all_bookings->rowCount() > 0): ?>
+            <?php if ($bookings->rowCount() > 0): ?>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white divide-y divide-gray-200">
-                        <thead class="bg-gray-100">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Service</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Provider</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Price</th>
-                                <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Service
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Provider
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Date & Time
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Status
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Price
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            <?php while ($b = $all_bookings->fetch(PDO::FETCH_ASSOC)): ?>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <?php while ($booking = $bookings->fetch(PDO::FETCH_ASSOC)): ?>
                                 <tr>
                                     <td class="px-6 py-4">
-                                        <div class="text-sm font-medium text-gray-900"><?= $b['service_title'] ?></div>
-                                        <div class="text-sm text-gray-500"><?= $b['category_name'] ?></div>
+                                        <div class="text-sm font-medium text-gray-900"><?= $booking['service_title'] ?></div>
+                                        <div class="text-sm text-gray-500"><?= $booking['category_name'] ?></div>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900"><?= $b['provider_name'] ?></td>
-                                    <td class="px-6 py-4 text-sm text-gray-700">
-                                        <?= formatDate($b['booking_date']) ?><br>
-                                        <span class="text-sm text-gray-500"><?= formatTime($b['start_time']) ?></span>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900"><?= $booking['provider_name'] ?></div>
                                     </td>
-                                    <td class="px-6 py-4 text-sm">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900"><?= formatDate($booking['booking_date']) ?></div>
+                                        <div class="text-sm text-gray-500"><?= formatTime($booking['start_time']) ?></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
                                         <?php
-                                            $colors = [
-                                                'pending' => 'bg-blue-100 text-blue-800',
-                                                'confirmed' => 'bg-green-100 text-green-800',
-                                                'completed' => 'bg-purple-100 text-purple-800',
-                                                'cancelled' => 'bg-red-100 text-red-800',
-                                            ];
-                                            $status_class = $colors[$b['status']] ?? 'bg-gray-100 text-gray-800';
+                                        $status_color = 'bg-blue-100 text-blue-800';
+                                        if ($booking['status'] === 'confirmed') {
+                                            $status_color = 'bg-green-100 text-green-800';
+                                        } elseif ($booking['status'] === 'cancelled') {
+                                            $status_color = 'bg-red-100 text-red-800';
+                                        } elseif ($booking['status'] === 'completed') {
+                                            $status_color = 'bg-purple-100 text-purple-800';
+                                        }
                                         ?>
-                                        <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold <?= $status_class ?>">
-                                            <?= ucfirst($b['status']) ?>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?= $status_color ?>">
+                                            <?= ucfirst($booking['status']) ?>
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-gray-700">$<?= number_format($b['total_price'], 2) ?></td>
-                                    <td class="px-6 py-4 text-right">
-                                        <a href="<?= BASE_URL ?>/bookings/view.php?id=<?= $b['id'] ?>" class="text-primary-600 hover:text-primary-900 mr-3">View</a>
-                                        <?php if ($b['status'] === 'pending'): ?>
-                                            <a href="<?= BASE_URL ?>/bookings/cancel.php?id=<?= $b['id'] ?>" class="text-red-600 hover:text-red-900 mr-3">Cancel</a>
-                                        <?php endif; ?>
-                                        <?php if ($b['status'] === 'completed'): ?>
-                                            <a href="<?= BASE_URL ?>/bookings/review.php?booking_id=<?= $b['id'] ?>" class="text-green-600 hover:text-green-900">Review</a>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        $<?= number_format($booking['total_price'], 2) ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <a href="<?php echo BASE_URL; ?>/bookings/view.php?id=<?= $booking['id'] ?>" 
+                                           class="text-primary-600 hover:text-primary-900 mr-3">View</a>
+                                        
+                                        <?php if ($booking['status'] === 'completed'): ?>
+                                            <a href="<?php echo BASE_URL; ?>/bookings/review.php?booking_id=<?= $booking['id'] ?>" 
+                                               class="text-green-600 hover:text-green-900">Review</a>
+                                        <?php elseif ($booking['status'] === 'pending'): ?>
+                                            <a href="<?php echo BASE_URL; ?>/bookings/cancel.php?id=<?= $booking['id'] ?>" 
+                                               class="text-red-600 hover:text-red-900"
+                                               onclick="return confirm('Are you sure you want to cancel this booking?')">
+                                                Cancel
+                                            </a>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -108,9 +146,15 @@ include '../includes/header.php';
                     </table>
                 </div>
             <?php else: ?>
-                <div class="bg-gray-50 p-6 rounded-lg text-center text-gray-600">
-                    <p>No bookings found<?= $status_filter ? ' for "' . htmlspecialchars($status_filter) . '"' : '' ?>.</p>
-                    <a href="<?= BASE_URL ?>/services/search.php" class="btn btn-primary mt-4">Find Services</a>
+                <div class="text-center py-12">
+                    <div class="text-gray-400 mb-4">
+                        <i class="fas fa-calendar-alt fa-3x"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
+                    <p class="text-gray-600 mb-6">You haven't made any bookings yet.</p>
+                    <a href="<?php echo BASE_URL; ?>/services/search.php" class="btn btn-primary">
+                        Book a Service
+                    </a>
                 </div>
             <?php endif; ?>
         </div>
