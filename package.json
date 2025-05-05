@@ -1,0 +1,12 @@
+{
+  "name": "local-service-finder",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./assets/css/input.css -o ./assets/css/style.css --watch",
+    "dev": "php -S localhost:8000",
+    "start": "npm run build:css & npm run dev"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.3.3"
+  }
+}
